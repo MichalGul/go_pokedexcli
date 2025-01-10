@@ -6,12 +6,19 @@ import (
 	"log"
 	"os"
 	"strings"
+	"github.com/MichalGul/go_pokedexcli/internal/pokeapi"
 )
 
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(config *config) error
+}
+
+type config struct {
+	pokeapiClient pokeapi.Client
+	Next string
+	Previous string
 }
 
 
@@ -26,6 +33,16 @@ func getCommandsRegister() map[string]cliCommand {
 			description: "Displays a help message",
 			callback:    commandHelp,
 		},
+		"map": {
+			name: "map",
+			description: "Displays next avaliable locations in Pokemon world",
+			callback: commandMap,
+		},
+		"mapb": {
+			name: "mapb",
+			description: "Displays previous avaliable locations in Pokemon world",
+			callback: commandMapb,
+		},
 	}
 }
 
@@ -35,7 +52,7 @@ func cleanInput(text string) []string {
 	return cleanedResult
 }
 
-func startRepl() {
+func startRepl(config *config) {
 
 	inputScanner := bufio.NewScanner(os.Stdin)
 
@@ -58,7 +75,7 @@ func startRepl() {
 			fmt.Println("Unknown command")
 			continue
 		}
-		command.callback()
+		command.callback(config)
 	}
 
 }
