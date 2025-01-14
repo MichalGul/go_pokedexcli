@@ -17,6 +17,66 @@ type Locations struct {
 	} `json:"results"`
 }
 
+type Pokemon struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+type PokemonEncounter struct {
+	Pokemon Pokemon `json:"pokemon"`
+}
+
+type ExploreResponse struct {
+	PokemonEncounters []PokemonEncounter `json:"pokemon_encounters"`
+}
+
+func (c *Client) ExploreLocation(url string, location string) (ExploreResponse, error) {
+	exploreUrl := url + "/" + location
+
+	elem, exists := c.cache.Get(exploreUrl)
+	if exists {
+		exploreResponse := ExploreResponse{}
+		unmarshalErr := json.Unmarshal(elem, &exploreResponse)
+		if unmarshalErr != nil {
+			return ExploreResponse{}, fmt.Errorf("error unmarshal response data for %s error: %v", url, unmarshalErr)
+		}
+		return exploreResponse, nil
+	}
+
+	//todo usse cache here get
+	fmt.Printf("URL EXPLORE: %s \n", exploreUrl)
+	req, err := http.NewRequest("GET", exploreUrl, nil)
+	if err != nil {
+		return ExploreResponse{}, fmt.Errorf("error creating Get request for %s error: %v", exploreUrl, err)
+	}
+
+	exploreResponse, err := c.httpClient.Do(req)
+	if err != nil {
+		return ExploreResponse{}, fmt.Errorf("error getting response for %s error: %v", url, err)
+	}
+	defer exploreResponse.Body.Close()
+
+	if exploreResponse.StatusCode > 299{
+		return ExploreResponse{}, fmt.Errorf("location status code request not OK :%s", exploreResponse.Status)
+	}
+
+	rawBytes, err := io.ReadAll(exploreResponse.Body)
+	if err != nil {
+		return ExploreResponse{}, fmt.Errorf("failed to read raw bytes of response %v", err)
+	}
+
+	c.cache.Add(url, rawBytes)
+
+	exploreLocations := ExploreResponse{}
+	unmarshalErr := json.Unmarshal(rawBytes, &exploreLocations)
+	if unmarshalErr != nil {
+		return ExploreResponse{}, fmt.Errorf("error unmarshal response data for %s error: %v", url, unmarshalErr)
+	}
+
+	return exploreLocations, nil
+
+}
+
 
 // Struct client method to get locations
 func (c *Client) GetLocations(url string) (Locations, error) {
@@ -61,6 +121,7 @@ func (c *Client) GetLocations(url string) (Locations, error) {
 
 	return locations, nil
 }
+
 
 
 // // Struct client method to get locations

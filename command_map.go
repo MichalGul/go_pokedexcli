@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func commandMap(config *config) error {
+func commandMap(config *config, _ string) error {
 	currentLocations, err := config.pokeapiClient.GetLocations(config.Next)
 	if err != nil {
 		fmt.Printf("error with map command %v", err)

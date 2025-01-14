@@ -5,7 +5,7 @@ import (
 	"github.com/MichalGul/go_pokedexcli/internal/pokeapi"
 )
 
-func commandMapb(config *config) error {
+func commandMapb(config *config, _ string) error {
 	prevUrl := config.Previous
 	if config.Previous == "" {
 		prevUrl = pokeapi.LocationEndpoint
