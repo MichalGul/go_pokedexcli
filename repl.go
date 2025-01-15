@@ -17,6 +17,7 @@ type cliCommand struct {
 
 type config struct {
 	pokeapiClient pokeapi.Client
+	pokedex pokeapi.Pokedex
 	Next string
 	Previous string
 }
@@ -44,9 +45,19 @@ func getCommandsRegister() map[string]cliCommand {
 			callback: commandMapb,
 		},
 		"explore": {
-			name: "explore",
+			name: "explore <area-name>",
 			description: "Displays pokemons in selected location. Example: explore eterna-forest-area",
 			callback: commandExplore,
+		},
+		"catch": {
+			name: "catch <pokemon-name>",
+			description: "Attempts to catch pokemon and adds it to pokedex",
+			callback: commandCatch,
+		},
+		"pokedex": {
+			name: "pokedex",
+			description: "Displays caught pokemons",
+			callback: commandPokedex,
 		},
 	}
 }

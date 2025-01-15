@@ -7,27 +7,35 @@ import (
 	"net/http"
 )
 
-type Locations struct {
-	Count    int    `json:"count"`
-	Next     string `json:"next"`
-	Previous string `json:"previous"`
-	Results  []struct {
-		Name string `json:"name"`
-		URL  string `json:"url"`
-	} `json:"results"`
-}
+func (c *Client) CatchPokemon(url string, pokemonName string) (CaughtPokemon, bool, error) {
+	pokemonUrl := url + "/" + pokemonName
 
-type Pokemon struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
-}
+	// todo use Cache to cache requests to pokemon
+	req, err := http.NewRequest("GET", pokemonUrl, nil)
+	if err != nil {
+		return CaughtPokemon{}, false, fmt.Errorf("error creating Get request for %s error: %v", pokemonUrl, err)
+	}
 
-type PokemonEncounter struct {
-	Pokemon Pokemon `json:"pokemon"`
-}
+	catchResponse, err := c.httpClient.Do(req)
+	if err != nil {
+		return CaughtPokemon{}, false, fmt.Errorf("error getting response for %s error: %v ", url, err)
+	}
+	defer catchResponse.Body.Close()
 
-type ExploreResponse struct {
-	PokemonEncounters []PokemonEncounter `json:"pokemon_encounters"`
+	if catchResponse.StatusCode > 299{
+		return CaughtPokemon{}, false, fmt.Errorf("catch status code request not OK (probably not existing pokemon) :%s", catchResponse.Status)
+	}
+	// todo change to use marshall
+	pokemonToCatch := CaughtPokemon{}
+	jsonDecoder := json.NewDecoder(catchResponse.Body)
+	decodeError := jsonDecoder.Decode(&pokemonToCatch)
+
+	if decodeError != nil {
+		return CaughtPokemon{}, false, fmt.Errorf("error decoding response data for %s error: %v", url, decodeError)
+	}
+	// todo move catching logic to command
+	pokeWasCaught := attemptToCatchPokemon(pokemonToCatch.BaseExperience)
+	return pokemonToCatch, pokeWasCaught, nil
 }
 
 func (c *Client) ExploreLocation(url string, location string) (ExploreResponse, error) {
