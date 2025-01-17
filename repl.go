@@ -54,6 +54,11 @@ func getCommandsRegister() map[string]cliCommand {
 			description: "Attempts to catch pokemon and adds it to pokedex",
 			callback: commandCatch,
 		},
+		"inspect":{
+			name: "inspect <pokemon-name>",
+			description: "Inspects caught pokemon displaying its stats",
+			callback: commandInspect,
+		},
 		"pokedex": {
 			name: "pokedex",
 			description: "Displays caught pokemons",
@@ -100,7 +105,7 @@ func startRepl(config *config) {
 
 		comand_err := command.callback(config, secondArg)
 		if comand_err != nil {
-			fmt.Printf("Command %s failed \n", commandName)
+			fmt.Printf("Command %s failed %v \n", commandName, comand_err)
 		}
 	}
 

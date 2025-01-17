@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-
 	"github.com/MichalGul/go_pokedexcli/internal/pokeapi"
 )
 
