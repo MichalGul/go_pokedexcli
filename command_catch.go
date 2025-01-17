@@ -13,13 +13,15 @@ func commandCatch(config *config, pokemonName string) error {
 	}
 	fmt.Printf("Throwing a Pokeball at %s...\n", pokemonName)
 
-	pokemon, wasCaught, err := config.pokeapiClient.CatchPokemon(pokeapi.PokemonEndpoint, pokemonName)
+	pokemon, err := config.pokeapiClient.CatchPokemon(pokeapi.PokemonEndpoint, pokemonName)
 	if err != nil {
 		fmt.Printf("error with catch command %v \n", err)
 		return err
 	}
 
-	if wasCaught {
+	pokeWasCaught := attemptToCatchPokemon(pokemon.BaseExperience)
+
+	if pokeWasCaught {
 		fmt.Printf("%s was caught!\n", pokemonName)
 		config.pokedex.OwnedPokemon[pokemonName] = pokemon
 	} else {

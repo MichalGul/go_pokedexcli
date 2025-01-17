@@ -7,35 +7,51 @@ import (
 	"net/http"
 )
 
-func (c *Client) CatchPokemon(url string, pokemonName string) (CaughtPokemon, bool, error) {
+func (c *Client) CatchPokemon(url string, pokemonName string) (CaughtPokemon, error) {
+
 	pokemonUrl := url + "/" + pokemonName
 
-	// todo use Cache to cache requests to pokemon
+	// Read from cache
+	pokemonBytes, exists := c.cache.Get(pokemonUrl)
+	if exists {
+		 pokemon:= CaughtPokemon{}
+		unmarshalErr := json.Unmarshal(pokemonBytes, &pokemon)
+		if unmarshalErr != nil {
+			return CaughtPokemon{}, fmt.Errorf("error unmarshal response data for %s error: %v", url, unmarshalErr)
+		}
+		return pokemon, nil
+	}
+
 	req, err := http.NewRequest("GET", pokemonUrl, nil)
 	if err != nil {
-		return CaughtPokemon{}, false, fmt.Errorf("error creating Get request for %s error: %v", pokemonUrl, err)
+		return CaughtPokemon{}, fmt.Errorf("error creating Get request for %s error: %v", pokemonUrl, err)
 	}
 
 	catchResponse, err := c.httpClient.Do(req)
 	if err != nil {
-		return CaughtPokemon{}, false, fmt.Errorf("error getting response for %s error: %v ", url, err)
+		return CaughtPokemon{}, fmt.Errorf("error getting response for %s error: %v ", url, err)
 	}
 	defer catchResponse.Body.Close()
 
 	if catchResponse.StatusCode > 299{
-		return CaughtPokemon{}, false, fmt.Errorf("catch status code request not OK (probably not existing pokemon) :%s", catchResponse.Status)
+		return CaughtPokemon{}, fmt.Errorf("catch status code request not OK (probably not existing pokemon) :%s", catchResponse.Status)
 	}
-	// todo change to use marshall
-	pokemonToCatch := CaughtPokemon{}
-	jsonDecoder := json.NewDecoder(catchResponse.Body)
-	decodeError := jsonDecoder.Decode(&pokemonToCatch)
 
-	if decodeError != nil {
-		return CaughtPokemon{}, false, fmt.Errorf("error decoding response data for %s error: %v", url, decodeError)
+	byteArray, err := io.ReadAll(catchResponse.Body)
+	if err != nil {
+		return CaughtPokemon{}, fmt.Errorf("failed to read raw bytes of response %v", err)
+
 	}
-	// todo move catching logic to command
-	pokeWasCaught := attemptToCatchPokemon(pokemonToCatch.BaseExperience)
-	return pokemonToCatch, pokeWasCaught, nil
+
+	c.cache.Add(pokemonUrl, byteArray)
+
+	pokemonToCatch := CaughtPokemon{}
+	unmarshalErr := json.Unmarshal(byteArray, &pokemonToCatch)
+	if unmarshalErr != nil {
+		return CaughtPokemon{}, fmt.Errorf("error unmarshal response data for %s error: %v", url, unmarshalErr)
+	}
+
+	return pokemonToCatch, nil
 }
 
 func (c *Client) ExploreLocation(url string, location string) (ExploreResponse, error) {
